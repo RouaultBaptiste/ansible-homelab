@@ -1,0 +1,9 @@
+---
+- name: Appliquer le socle sécurité
+  hosts: linux
+  become: yes
+
+  roles:
+    - security_baseline
+    - ssh_hardening
+    - wazuh_agent

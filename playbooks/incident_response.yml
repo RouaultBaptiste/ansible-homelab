@@ -1,0 +1,23 @@
+- name: Réponse SOC - Isolation machine
+  hosts: "{{ target }}"
+  become: yes
+
+  tasks:
+    - name: Autoriser Wazuh avant isolation
+      ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+      loop:
+        - { port: 1514, proto: udp }
+        - { port: 1515, proto: tcp }
+
+    - name: Passer le firewall en mode strict
+      ufw:
+        default: deny
+        direction: incoming
+
+    - name: Redémarrer fail2ban
+      service:
+        name: fail2ban
+        state: restarted

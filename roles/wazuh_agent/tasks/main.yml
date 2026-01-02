@@ -1,0 +1,27 @@
+
+---
+- name: Installer dépendances
+  apt:
+    name: curl
+    state: present
+    update_cache: yes
+
+- name: Télécharger le paquet Wazuh agent
+  get_url:
+    url: "https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_{{ wazuh_agent_version }}_amd64.deb"
+    dest: /tmp/wazuh-agent.deb
+    mode: '0644'
+
+- name: Installer l’agent Wazuh avec enrollment auto
+  environment:
+    WAZUH_MANAGER: "{{ wazuh_manager_ip }}"
+    WAZUH_AGENT_NAME: "{{ inventory_hostname }}"
+  command: dpkg -i /tmp/wazuh-agent.deb
+  args:
+    creates: /var/ossec/bin/wazuh-agentd
+
+- name: Activer et démarrer l’agent
+  systemd:
+    name: wazuh-agent
+    enabled: yes
+    state: started

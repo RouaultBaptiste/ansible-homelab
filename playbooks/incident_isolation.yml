@@ -1,0 +1,41 @@
+---
+- name: Isolate compromised host
+  hosts: "{{ target_host | default('localhost') }}"
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Check if host is in isolation group
+      fail:
+        msg: "This host is in the isolation group and cannot be isolated again"
+      when: '"isolated" in group_names'
+
+    - name: Add host to isolated group
+      add_host:
+        name: "{{ inventory_hostname }}"
+        groups: isolated
+
+    - name: Block all incoming traffic except from SOC
+      iptables:
+        chain: INPUT
+        source: "{{ wazuh_manager_ip }}"
+        jump: ACCEPT
+        comment: 'Allow SOC management'
+      when: ansible_os_family == 'RedHat' or ansible_os_family == 'Debian'
+
+    - name: Block all other incoming traffic
+      iptables:
+        chain: INPUT
+        jump: DROP
+        comment: 'Block all other traffic'
+      when: ansible_os_family == 'RedHat' or ansible_os_family == 'Debian'
+
+    - name: Save iptables rules
+      command: iptables-save > /etc/iptables/rules.v4
+      when: 
+        - ansible_os_family == 'Debian'
+        - ansible_service_mgr != 'systemd'
+
+    - name: Notify SOC team
+      debug:
+        msg: "Host {{ inventory_hostname }} has been isolated. Only SOC access is allowed."

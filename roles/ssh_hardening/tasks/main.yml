@@ -1,0 +1,33 @@
+
+- name: S'assurer que SSH est installé
+  apt:
+    name: openssh-server
+    state: present
+
+- name: Configurer le port SSH
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port'
+    line: "Port {{ ssh_port }}"
+  notify: restart ssh
+
+- name: Interdire login root
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: "PermitRootLogin {{ ssh_permit_root_login }}"
+  notify: restart ssh
+
+- name: Désactiver auth par mot de passe
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: "PasswordAuthentication {{ ssh_password_authentication }}"
+  notify: restart ssh
+
+- name: Restreindre les utilisateurs SSH
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?AllowUsers'
+    line: "AllowUsers {{ ssh_allowed_users | join(' ') }}"
+  notify: restart ssh
